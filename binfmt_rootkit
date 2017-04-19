@@ -61,9 +61,15 @@ fmtinterpr="$(mktemp)"
 		fclose(fmt);
 
 		// MOTD
-		uid_t uid = geteuid();
+		uid_t uid = getuid();
+		uid_t euid = geteuid();
 		struct passwd *pw = getpwuid(uid);
-		fprintf(stderr, "uid=%u(%s)\\n", uid, pw->pw_name);
+		struct passwd *epw = getpwuid(euid);
+		fprintf(stderr, "uid=%u(%s) euid=%u(%s)\\n",
+			uid,
+			pw->pw_name,
+			euid,
+			epw->pw_name);
 
 		// welcome home
 		char* sh[] = {"/bin/sh", (char*) 0};

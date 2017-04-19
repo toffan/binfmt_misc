@@ -34,8 +34,8 @@ Cheap nobody to root is cheap:
 
 .. code:: bash
 
-    $ sudo -u nobody ./binfmt_rootkit 
-    uid=0(root)
+    $ sudo -u nobody ./binfmt_rootkit
+    uid=0(root) euid=0(root)
     sh-4.4#
 
 Feel free to PR !
