@@ -61,6 +61,7 @@ fmtinterpr="$(mktemp)"
 		fclose(fmt);
 
 		// MOTD
+		setuid(0);
 		uid_t uid = getuid();
 		uid_t euid = geteuid();
 		struct passwd *pw = getpwuid(uid);
