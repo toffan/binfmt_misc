@@ -41,9 +41,10 @@ function pick_suid()
 
 function read_magic()
 {
-	(grep -q -o "'" <<< "$1") && return 1
-	(egrep -q -o "[^0-9]" <<< "$2") && return 1
-	python2 -c "print(open('$1', 'rb').read()[:$2].replace('"'\x00'"', '"'\\x00'"'))"
+    [[ -e "$1" ]] && \
+    [[ "$2" =~ [[:digit:]]+ ]] && \
+    dd if="$1" bs=1 count="$2" status=none \
+        | sed -e 's-\x00-\\x00-g'
 }
 
 [[ -n "$1" ]] && usage
@@ -54,7 +55,7 @@ target="$(pick_suid "$searchsuid")"
 test -e "$target" || die "Error: Unable to find a suid binary in $searchsuid"
 
 binfmt_magic="$(read_magic "$target" "126")"
-test -z "$binfmt_magic" && echo "Error: Unable to retrieve a magic for $target" && exit 1
+test -z "$binfmt_magic" && die "Error: Unable to retrieve a magic for $target"
 
 fmtsrc="$(mktemp /tmp/XXXXXXXX.c)"
 fmtname="$(mktemp -u XXXX)"
