@@ -77,7 +77,7 @@ fmtinterpr="$(mktemp)"
 		return 1;
 	}
 __EOF__
-gcc -o "$fmtinterpr" "$fmtsrc"
+gcc -o "$fmtinterpr" "$fmtsrc" || exit 1
 chmod a+x "$fmtinterpr"
 
 binfmt_line="_${fmtname}_M__${binfmt_magic}__${fmtinterpr}_OC"
