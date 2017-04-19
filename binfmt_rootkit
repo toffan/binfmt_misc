@@ -1,8 +1,8 @@
 #!/bin/bash
 
-searchsuid="/bin/"
-mountpoint="/proc/sys/fs/binfmt_misc"
-exe="$0"
+readonly searchsuid="/bin/"
+readonly mountpoint="/proc/sys/fs/binfmt_misc"
+readonly exe="$0"
 
 
 warn()
@@ -18,7 +18,7 @@ die()
 
 usage()
 {
-    cat <<EOF
+    cat 1>&2 <<EOF
 Usage: $exe
     Gives you a root shell if /proc/sys/fs/binfmt_misc/register is writeable,
     note that it must be enforced by any other mean before your try this, for
