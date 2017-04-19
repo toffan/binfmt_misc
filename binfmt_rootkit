@@ -35,11 +35,8 @@ function not_writeable()
 
 function pick_suid()
 {
-	find "$1" -perm -4000 -print|while read -r candidate;
-	do
-		test -x "$candidate" || continue
-		echo "$candidate"
-	done|tail -n 1
+	find "$1" -perm -4000 -executable \
+	    | tail -n 1
 }
 
 function read_magic()
@@ -54,7 +51,7 @@ function read_magic()
 not_writeable && die "Error: $mountpoint/register is not writeable"
 
 target="$(pick_suid "$searchsuid")"
-test -z "$target" && echo "Error: Unable to find a suid binary in $searchsuid" && exit 1
+test -e "$target" || die "Error: Unable to find a suid binary in $searchsuid"
 
 binfmt_magic="$(read_magic "$target" "126")"
 test -z "$binfmt_magic" && echo "Error: Unable to retrieve a magic for $target" && exit 1
