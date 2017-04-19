@@ -38,4 +38,4 @@ Cheap nobody to root is cheap:
     uid=0(root) euid=0(root)
     sh-4.4#
 
-Feel free to PR !
+Tested on :literal:`Linux 4.9.6-1` and working with major distributions.
