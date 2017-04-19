@@ -28,7 +28,7 @@ function read_magic()
 {
 	(grep -q -o "'" <<< "$1") && return 1
 	(egrep -q -o "[^0-9]" <<< "$2") && return 1
-	python -c "print(open('$1', 'rb').read()[:$2].replace('"'\x00'"', '"'\\x00'"'))"
+	python2 -c "print(open('$1', 'rb').read()[:$2].replace('"'\x00'"', '"'\\x00'"'))"
 }
 
 not_writeable && echo "Error: $mountpoint/register is not writeable" && exit 1
